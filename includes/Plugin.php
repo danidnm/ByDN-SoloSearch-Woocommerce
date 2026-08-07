@@ -34,6 +34,11 @@ class Plugin {
 
         if ( is_admin() ) {
             add_filter( 'woocommerce_get_settings_pages', array( $this, 'register_settings_page' ) );
+
+            // Unlike Admin\Settings, FieldMappingField doesn't extend anything
+            // from WooCommerce, so there's no WC_Settings_Page-style timing
+            // hazard instantiating it directly here.
+            ( new Admin\FieldMappingField() )->register();
         }
 
         if ( defined( 'WP_CLI' ) && WP_CLI ) {

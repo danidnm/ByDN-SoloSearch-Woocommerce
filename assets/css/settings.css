@@ -1,0 +1,6 @@
+/* Scoped to our own Field Mapping table only - never touches WooCommerce's
+ * or WordPress's own admin styles elsewhere on the page. */
+
+#ss-field-mapping-table thead th {
+    padding: 8px 10px;
+}

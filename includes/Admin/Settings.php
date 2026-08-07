@@ -16,8 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * sanitisation for free instead of us reimplementing all of that.
  *
  * Sections mirror suite-magento's system.xml groups: General, Feed
- * Generation and Widget Embed exist now; Field Mapping is added once the
- * feed generator itself exists.
+ * Generation, Field Mapping and Widget Embed.
  */
 class Settings extends \WC_Settings_Page {
 
@@ -30,9 +29,10 @@ class Settings extends \WC_Settings_Page {
 
     protected function get_own_sections() {
         return array(
-            ''       => __( 'General', 'solosearch-for-woocommerce' ),
-            'feed'   => __( 'Feed Generation', 'solosearch-for-woocommerce' ),
-            'widget' => __( 'Widget Embed', 'solosearch-for-woocommerce' ),
+            ''        => __( 'General', 'solosearch-for-woocommerce' ),
+            'feed'    => __( 'Feed Generation', 'solosearch-for-woocommerce' ),
+            'mapping' => __( 'Field Mapping', 'solosearch-for-woocommerce' ),
+            'widget'  => __( 'Widget Embed', 'solosearch-for-woocommerce' ),
         );
     }
 
@@ -95,6 +95,25 @@ class Settings extends \WC_Settings_Page {
             array(
                 'type' => 'sectionend',
                 'id'   => 'solosearch_feed_options',
+            ),
+        );
+    }
+
+    protected function get_settings_for_mapping_section() {
+        return array(
+            array(
+                'title' => __( 'Field Mapping', 'solosearch-for-woocommerce' ),
+                'type'  => 'title',
+                'id'    => 'solosearch_mapping_options',
+                'desc'  => __( 'Send extra product data to SoloSearch, on top of the structural fields that are always included automatically (see Basic Concepts in the SoloSearch docs).', 'solosearch-for-woocommerce' ),
+            ),
+            array(
+                'id'   => Config::OPTION_FIELD_MAPPING,
+                'type' => FieldMappingField::TYPE,
+            ),
+            array(
+                'type' => 'sectionend',
+                'id'   => 'solosearch_mapping_options',
             ),
         );
     }

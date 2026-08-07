@@ -12,8 +12,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  * suite-magento's Helper/Config.php: one place that knows every option name
  * and its default, everything else asks this class instead.
  *
- * Field Mapping settings are added here once the feed generator itself
- * exists - defining their shape ahead of that logic would just be guessing.
+ * STRUCTURAL_FIELDS lists the feed fields that are always computed directly
+ * from the product - never overridable via field mapping, even if an admin
+ * enters one of these names, mirroring suite-magento's STRUCTURAL_FEED_FIELDS.
+ * FeedGenerator (not built yet) must skip any mapping row targeting one of
+ * these when it actually builds the feed.
  */
 class Config {
 
@@ -22,12 +25,18 @@ class Config {
     const OPTION_API_TOKEN              = 'solosearch_woo_api_token';
     const OPTION_AUTO_GENERATION_ENABLE = 'solosearch_woo_auto_generation_enable';
     const OPTION_GENERATION_TIME        = 'solosearch_woo_generation_time';
+    const OPTION_FIELD_MAPPING          = 'solosearch_woo_field_mapping';
     const OPTION_WIDGET_ENABLE          = 'solosearch_woo_widget_enable';
     const OPTION_SEARCH_ENGINE_ID = 'solosearch_woo_widget_search_engine_id';
     const OPTION_SCRIPT_URL       = 'solosearch_woo_widget_script_url';
     const OPTION_INPUT_SELECTOR   = 'solosearch_woo_widget_input_selector';
     const OPTION_LOCALE           = 'solosearch_woo_widget_locale';
     const OPTION_TEMPLATE_SET_ID  = 'solosearch_woo_widget_template_set_id';
+
+    const STRUCTURAL_FIELDS = array(
+        'id', 'sku', 'title', 'link', 'image', 'price', 'sale_price',
+        'availability', 'disable_add_to_cart', 'categories', 'currency',
+    );
 
     const DEFAULT_API_URL         = 'https://app.solosearch.app';
     const DEFAULT_SCRIPT_URL      = 'https://search.solosearch.app/widget.js';
@@ -80,6 +89,49 @@ class Config {
     public function getGenerationTime(): string {
         $time = get_option( self::OPTION_GENERATION_TIME, self::DEFAULT_GENERATION_TIME );
         return $time ? (string) $time : self::DEFAULT_GENERATION_TIME;
+    }
+
+    /**
+     * Extra product data to send in the feed, beyond the structural fields.
+     * Stored as parallel arrays (field[]/source[]/key[], one entry per row -
+     * how the repeater grid in Admin\FieldMappingField submits itself) and
+     * normalised here into a list of rows, skipping any row missing a field
+     * name or key. $row['source'] is 'attribute' or 'custom_field' - see
+     * CLAUDE.md for what each maps to on a WC_Product.
+     *
+     * Rows targeting a structural field name are not filtered out here -
+     * that's FeedGenerator's job when it actually builds the feed (see
+     * STRUCTURAL_FIELDS), same as Config staying a plain data accessor
+     * everywhere else in this class.
+     *
+     * @return array<int, array{field: string, source: string, key: string}>
+     */
+    public function getFieldMapping(): array {
+        $raw = get_option( self::OPTION_FIELD_MAPPING, array() );
+
+        if ( ! is_array( $raw ) || empty( $raw['field'] ) || ! is_array( $raw['field'] ) ) {
+            return array();
+        }
+
+        $rows = array();
+
+        foreach ( $raw['field'] as $i => $field ) {
+            $field = trim( (string) $field );
+            $key   = isset( $raw['key'][ $i ] ) ? trim( (string) $raw['key'][ $i ] ) : '';
+
+            if ( '' === $field || '' === $key ) {
+                continue;
+            }
+
+            $source   = isset( $raw['source'][ $i ] ) ? (string) $raw['source'][ $i ] : 'attribute';
+            $rows[] = array(
+                'field'  => $field,
+                'source' => 'custom_field' === $source ? 'custom_field' : 'attribute',
+                'key'    => $key,
+            );
+        }
+
+        return $rows;
     }
 
     public function isWidgetEnabled(): bool {
