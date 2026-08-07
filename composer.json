@@ -1,0 +1,14 @@
+{
+    "name": "bydn/solosearch-for-woocommerce",
+    "description": "Generates a product feed for SoloSearch and embeds the search widget in a WooCommerce store.",
+    "type": "wordpress-plugin",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Bydn\\SoloSearchWoo\\": "includes/"
+        }
+    }
+}
