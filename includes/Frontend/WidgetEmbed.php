@@ -72,5 +72,9 @@ class WidgetEmbed {
             esc_url( $config->getScriptUrl() ),
             $attribute_string // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built entirely from esc_attr() above.
         );
+
+        // Same guard as the widget script itself, and printed right after it
+        // - mirrors suite-magento keeping both in the single widget.phtml.
+        Cart::render();
     }
 }
