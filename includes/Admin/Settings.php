@@ -15,9 +15,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * and it gets tab/section navigation, field rendering, saving and
  * sanitisation for free instead of us reimplementing all of that.
  *
- * Sections mirror suite-magento's system.xml groups: General and Widget
- * Embed exist now; Feed Generation and Field Mapping are added once the feed
- * generator exists.
+ * Sections mirror suite-magento's system.xml groups: General, Feed
+ * Generation and Widget Embed exist now; Field Mapping is added once the
+ * feed generator itself exists.
  */
 class Settings extends \WC_Settings_Page {
 
@@ -31,6 +31,7 @@ class Settings extends \WC_Settings_Page {
     protected function get_own_sections() {
         return array(
             ''       => __( 'General', 'solosearch-for-woocommerce' ),
+            'feed'   => __( 'Feed Generation', 'solosearch-for-woocommerce' ),
             'widget' => __( 'Widget Embed', 'solosearch-for-woocommerce' ),
         );
     }
@@ -43,10 +44,11 @@ class Settings extends \WC_Settings_Page {
                 'id'    => 'solosearch_general_options',
             ),
             array(
-                'title'   => __( 'Enable feed generation', 'solosearch-for-woocommerce' ),
-                'id'      => Config::OPTION_ENABLE,
-                'type'    => 'checkbox',
-                'default' => 'no',
+                'title'    => __( 'Enable SoloSearch', 'solosearch-for-woocommerce' ),
+                'id'       => Config::OPTION_ENABLE,
+                'type'     => 'checkbox',
+                'default'  => 'no',
+                'desc_tip' => __( 'Master switch. When off, nothing runs - no feed generation (manual or automatic) and no widget embed, regardless of the settings on the other tabs.', 'solosearch-for-woocommerce' ),
             ),
             array(
                 'title'    => __( 'SoloSearch API URL', 'solosearch-for-woocommerce' ),
@@ -64,6 +66,35 @@ class Settings extends \WC_Settings_Page {
             array(
                 'type' => 'sectionend',
                 'id'   => 'solosearch_general_options',
+            ),
+        );
+    }
+
+    protected function get_settings_for_feed_section() {
+        return array(
+            array(
+                'title' => __( 'Feed Generation', 'solosearch-for-woocommerce' ),
+                'type'  => 'title',
+                'id'    => 'solosearch_feed_options',
+                'desc'  => __( 'You can always trigger a generation manually with wp solosearch feed generate, regardless of the settings below.', 'solosearch-for-woocommerce' ),
+            ),
+            array(
+                'title'   => __( 'Enable automatic generation', 'solosearch-for-woocommerce' ),
+                'id'      => Config::OPTION_AUTO_GENERATION_ENABLE,
+                'type'    => 'checkbox',
+                'default' => 'yes',
+                'desc_tip' => __( "Regenerates the feed automatically once a day at the time below. Doesn't affect manual generation.", 'solosearch-for-woocommerce' ),
+            ),
+            array(
+                'title'    => __( 'Generation time', 'solosearch-for-woocommerce' ),
+                'id'       => Config::OPTION_GENERATION_TIME,
+                'type'     => 'time',
+                'default'  => Config::DEFAULT_GENERATION_TIME,
+                'desc_tip' => __( 'Server time, 24h format.', 'solosearch-for-woocommerce' ),
+            ),
+            array(
+                'type' => 'sectionend',
+                'id'   => 'solosearch_feed_options',
             ),
         );
     }

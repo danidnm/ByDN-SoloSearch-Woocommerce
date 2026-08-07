@@ -23,6 +23,15 @@ class Plugin {
     public function run() {
         add_action( Cron\FeedSchedule::HOOK, array( '\\Bydn\\SoloSearchWoo\\Cron\\FeedSchedule', 'run' ) );
 
+        // Reschedule whenever the generation time changes. Both hooks are
+        // needed: update_option_{option} only fires once the option row
+        // already exists in the DB - the very first save of a brand new
+        // option goes through add_option() instead, firing add_option_{option}.
+        // activate() seeds the option so this should always be the update_option
+        // path in practice, but both are registered so it's correct regardless.
+        add_action( 'update_option_' . Config::OPTION_GENERATION_TIME, array( '\\Bydn\\SoloSearchWoo\\Cron\\FeedSchedule', 'reschedule' ) );
+        add_action( 'add_option_' . Config::OPTION_GENERATION_TIME, array( '\\Bydn\\SoloSearchWoo\\Cron\\FeedSchedule', 'reschedule' ) );
+
         if ( is_admin() ) {
             add_filter( 'woocommerce_get_settings_pages', array( $this, 'register_settings_page' ) );
         }
@@ -49,9 +58,12 @@ class Plugin {
     }
 
     /**
-     * Runs on plugin activation.
+     * Runs on plugin activation. Seeds the generation time option so it
+     * exists in the DB from the start - see the comment in run() on why that
+     * matters for reschedule() firing correctly on the very first change.
      */
     public static function activate() {
+        add_option( Config::OPTION_GENERATION_TIME, Config::DEFAULT_GENERATION_TIME );
         Cron\FeedSchedule::schedule();
     }
 

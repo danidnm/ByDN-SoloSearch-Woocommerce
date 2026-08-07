@@ -2,6 +2,7 @@
 
 namespace Bydn\SoloSearchWoo\Cli;
 
+use Bydn\SoloSearchWoo\Config;
 use Bydn\SoloSearchWoo\FeedGenerator;
 use Bydn\SoloSearchWoo\Logger;
 
@@ -19,7 +20,11 @@ class FeedCommand {
 
     /**
      * Generates the SoloSearch product feed immediately, regardless of the
-     * scheduled cron task or whether feed generation is enabled in settings.
+     * scheduled cron task or "Enable automatic generation". Still respects
+     * the plugin's master switch ("Enable SoloSearch" in General settings) -
+     * same as suite-magento's console command, which calls
+     * generateForStoreIfEnabled() and so is gated by the general Enable flag
+     * but not by daily_generation_enabled.
      *
      * ## EXAMPLES
      *
@@ -32,6 +37,12 @@ class FeedCommand {
      * @return void
      */
     public function generate( $args, $assoc_args ) {
+        if ( ! ( new Config() )->isEnabled() ) {
+            Logger::info( 'Feed generation skipped (WP-CLI command): SoloSearch is disabled.' );
+            \WP_CLI::warning( 'SoloSearch is disabled (General > Enable SoloSearch). Nothing generated.' );
+            return;
+        }
+
         Logger::info( 'Feed generation started (WP-CLI command).' );
 
         ( new FeedGenerator() )->generate();
