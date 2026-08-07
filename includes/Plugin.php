@@ -23,6 +23,11 @@ class Plugin {
     public function run() {
         add_action( Cron\FeedSchedule::HOOK, array( '\\Bydn\\SoloSearchWoo\\Cron\\FeedSchedule', 'run' ) );
 
+        // wp_footer only ever fires on a real front-end page render, so this
+        // is effectively already scoped to the storefront without needing an
+        // explicit !is_admin() check.
+        add_action( 'wp_footer', array( '\\Bydn\\SoloSearchWoo\\Frontend\\WidgetEmbed', 'render' ) );
+
         // Reschedule whenever the generation time changes. Both hooks are
         // needed: update_option_{option} only fires once the option row
         // already exists in the DB - the very first save of a brand new
