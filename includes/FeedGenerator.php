@@ -49,9 +49,7 @@ class FeedGenerator {
 
         Logger::info( sprintf( 'Feed generated: %d products.', count( $products ) ) );
 
-        // TODO: notify suite to reindex once SoloSearchClient exists (mirrors
-        // suite-magento's SoloSearchClient::requestReindex(), called right
-        // after a successful generateForStoreIfEnabled()).
+        ( new SoloSearchClient() )->requestReindex();
     }
 
     /**
