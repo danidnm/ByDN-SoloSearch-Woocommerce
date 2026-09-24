@@ -3,7 +3,7 @@
  * Plugin Name: SoloSearch for WooCommerce
  * Plugin URI: https://solosearch.app
  * Description: Generates a product feed for SoloSearch and embeds the search widget in your store.
- * Version: 0.1.0
+ * Version: 1.0.1
  * Author: SoloSearch
  * Author URI: https://solosearch.app
  * License: Proprietary
@@ -25,7 +25,7 @@ if ( ! defined( 'SOLOSEARCH_WOO_PLUGIN_URL' ) ) {
     define( 'SOLOSEARCH_WOO_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 }
 if ( ! defined( 'SOLOSEARCH_WOO_VERSION' ) ) {
-    define( 'SOLOSEARCH_WOO_VERSION', '0.1.0' );
+    define( 'SOLOSEARCH_WOO_VERSION', '1.0.1' );
 }
 
 /**
