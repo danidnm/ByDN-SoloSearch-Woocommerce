@@ -28,7 +28,8 @@ class FeedGenerator {
      * @return void
      */
     public function generate() {
-        $mapping  = ( new Config() )->getFieldMapping();
+        $config   = new Config();
+        $mapping  = $config->getFieldMapping();
         $document = new \DOMDocument( '1.0', 'UTF-8' );
         $root     = $document->createElement( 'products' );
         $document->appendChild( $root );
@@ -45,11 +46,27 @@ class FeedGenerator {
             $root->appendChild( $this->buildProductNode( $document, $product, $mapping ) );
         }
 
+        $posts = array();
+
+        if ( $config->includesPosts() ) {
+            $posts = get_posts(
+                array(
+                    'post_type'   => 'post',
+                    'post_status' => 'publish',
+                    'numberposts' => -1,
+                )
+            );
+
+            foreach ( $posts as $post ) {
+                $root->appendChild( $this->buildPostNode( $document, $post ) );
+            }
+        }
+
         $document->formatOutput = true;
 
         $this->writeFeedFile( $document->saveXML() );
 
-        Logger::info( sprintf( 'Feed generated: %d products.', count( $products ) ) );
+        Logger::info( sprintf( 'Feed generated: %d products, %d posts.', count( $products ), count( $posts ) ) );
 
         ( new SoloSearchClient() )->requestReindex();
     }
@@ -71,6 +88,22 @@ class FeedGenerator {
         $item = $document->createElement( 'product' );
 
         foreach ( Fields::build( $product, $mapping ) as $name => $value ) {
+            $this->appendField( $document, $item, $name, $value );
+        }
+
+        return $item;
+    }
+
+    /**
+     * Reuses the same <product> node name as buildProductNode() above - the
+     * feed's root is <products>/<product> regardless of content_type, which
+     * is what tells suite the two apart once it's mapped (see Config's
+     * includesPosts() docblock), so no need for a separate element name here.
+     */
+    private function buildPostNode( \DOMDocument $document, \WP_Post $post ): \DOMElement {
+        $item = $document->createElement( 'product' );
+
+        foreach ( Fields::build_post( $post ) as $name => $value ) {
             $this->appendField( $document, $item, $name, $value );
         }
 

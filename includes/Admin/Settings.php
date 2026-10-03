@@ -3,6 +3,7 @@
 namespace Bydn\SoloSearchWoo\Admin;
 
 use Bydn\SoloSearchWoo\Config;
+use Bydn\SoloSearchWoo\FeedGenerator;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
@@ -77,7 +78,11 @@ class Settings extends \WC_Settings_Page {
                 'title' => __( 'Feed Generation', 'solosearch-for-woocommerce' ),
                 'type'  => 'title',
                 'id'    => 'solosearch_feed_options',
-                'desc'  => __( 'You can always trigger a generation manually with wp solosearch feed generate, regardless of the settings below.', 'solosearch-for-woocommerce' ),
+                'desc'  => sprintf(
+                    /* translators: %s: public feed URL, wrapped in <code> */
+                    __( 'You can always trigger a generation manually with wp solosearch feed generate, regardless of the settings below. Published at: %s', 'solosearch-for-woocommerce' ),
+                    '<code>' . esc_html( ( new FeedGenerator() )->getFeedUrl() ) . '</code>'
+                ),
             ),
             array(
                 'title'   => __( 'Enable automatic generation', 'solosearch-for-woocommerce' ),
@@ -92,6 +97,13 @@ class Settings extends \WC_Settings_Page {
                 'type'     => 'time',
                 'default'  => Config::DEFAULT_GENERATION_TIME,
                 'desc_tip' => __( 'Server time, 24h format.', 'solosearch-for-woocommerce' ),
+            ),
+            array(
+                'title'    => __( 'Include blog posts', 'solosearch-for-woocommerce' ),
+                'id'       => Config::OPTION_INCLUDE_POSTS,
+                'type'     => 'checkbox',
+                'default'  => 'no',
+                'desc_tip' => __( "Also sends published blog posts in the feed, tagged separately from products. While this is on, the widget takes over the search field on every page (not just shop pages), since the feed is no longer products-only.", 'solosearch-for-woocommerce' ),
             ),
             array(
                 'type' => 'sectionend',

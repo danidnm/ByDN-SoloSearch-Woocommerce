@@ -20,20 +20,20 @@ class WidgetEmbed {
      * @return void
      */
     public static function render() {
-        // The feed only carries products, so the widget only makes sense on
-        // WooCommerce pages (shop archive, product taxonomies, single
+        $config = new Config();
+
+        // While the feed only carries products, the widget only makes sense
+        // on WooCommerce pages (shop archive, product taxonomies, single
         // product) - is_woocommerce() deliberately excludes cart/checkout/
         // account (plain pages, not template-driven) and everything else
         // (blog posts, regular pages), so WordPress's own native search
         // stays untouched there instead of being hijacked into a
-        // products-only search. See suite issue for "content types" -
-        // making the feed support more than products so this restriction
-        // can eventually be lifted.
-        if ( ! is_woocommerce() ) {
+        // products-only search. Once Config::includesPosts() is on, the feed
+        // is no longer products-only, so the widget takes over the search
+        // field site-wide instead.
+        if ( ! $config->includesPosts() && ! is_woocommerce() ) {
             return;
         }
-
-        $config = new Config();
 
         // Same guard as suite-magento's Block\Widget::_toHtml(): a
         // half-configured engine must not emit a broken script tag.
