@@ -31,6 +31,7 @@ class Settings extends \WC_Settings_Page {
         return array(
             ''        => __( 'General', 'solosearch-for-woocommerce' ),
             'feed'    => __( 'Feed Generation', 'solosearch-for-woocommerce' ),
+            'queue'   => __( 'Product Queue', 'solosearch-for-woocommerce' ),
             'mapping' => __( 'Field Mapping', 'solosearch-for-woocommerce' ),
             'widget'  => __( 'Widget Embed', 'solosearch-for-woocommerce' ),
         );
@@ -95,6 +96,36 @@ class Settings extends \WC_Settings_Page {
             array(
                 'type' => 'sectionend',
                 'id'   => 'solosearch_feed_options',
+            ),
+        );
+    }
+
+    protected function get_settings_for_queue_section() {
+        return array(
+            array(
+                'title' => __( 'Product Queue', 'solosearch-for-woocommerce' ),
+                'type'  => 'title',
+                'id'    => 'solosearch_queue_options',
+                'desc'  => __( 'Real-time single-product sync, independent of the scheduled/manual Feed Reindex above.', 'solosearch-for-woocommerce' ),
+            ),
+            array(
+                'title'    => __( 'Enable Real-Time Sync', 'solosearch-for-woocommerce' ),
+                'id'       => Config::OPTION_REALTIME_SYNC_ENABLE,
+                'type'     => 'checkbox',
+                'default'  => 'yes',
+                'desc_tip' => __( 'Whether product changes are pushed to SoloSearch in real time as they happen. When disabled, product changes are not queued, and any entries still pending when the sync job runs are marked as failed instead of being sent.', 'solosearch-for-woocommerce' ),
+            ),
+            array(
+                'title'             => __( 'History Retention (days)', 'solosearch-for-woocommerce' ),
+                'id'                => Config::OPTION_QUEUE_RETENTION_DAYS,
+                'type'              => 'number',
+                'default'           => (string) Config::DEFAULT_QUEUE_RETENTION_DAYS,
+                'custom_attributes' => array( 'min' => '1' ),
+                'desc_tip'          => __( "How many days to keep finished (successful or failed) product queue entries before they're cleaned up - used as a visibility/audit trail of what was synced in real time. Pending entries are never removed regardless of age.", 'solosearch-for-woocommerce' ),
+            ),
+            array(
+                'type' => 'sectionend',
+                'id'   => 'solosearch_queue_options',
             ),
         );
     }
