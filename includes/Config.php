@@ -25,6 +25,7 @@ class Config {
     const OPTION_API_TOKEN              = 'solosearch_woo_api_token';
     const OPTION_AUTO_GENERATION_ENABLE = 'solosearch_woo_auto_generation_enable';
     const OPTION_GENERATION_TIME        = 'solosearch_woo_generation_time';
+    const OPTION_INCLUDE_POSTS          = 'solosearch_woo_include_posts';
     const OPTION_FIELD_MAPPING          = 'solosearch_woo_field_mapping';
     const OPTION_WIDGET_ENABLE          = 'solosearch_woo_widget_enable';
     const OPTION_SEARCH_ENGINE_ID = 'solosearch_woo_widget_search_engine_id';
@@ -33,14 +34,19 @@ class Config {
     const OPTION_LOCALE           = 'solosearch_woo_widget_locale';
     const OPTION_TEMPLATE_SET_ID  = 'solosearch_woo_widget_template_set_id';
 
+    const OPTION_REALTIME_SYNC_ENABLE = 'solosearch_woo_realtime_sync_enable';
+    const OPTION_QUEUE_RETENTION_DAYS = 'solosearch_woo_queue_retention_days';
+
     const STRUCTURAL_FIELDS = array(
         'id', 'sku', 'title', 'link', 'image', 'price', 'sale_price',
         'availability', 'disable_add_to_cart', 'categories', 'currency',
+        'content_type', 'content',
     );
 
     const DEFAULT_API_URL         = 'https://app.solosearch.app';
     const DEFAULT_SCRIPT_URL      = 'https://search.solosearch.app/widget.js';
     const DEFAULT_GENERATION_TIME = '03:00';
+    const DEFAULT_QUEUE_RETENTION_DAYS = 7;
 
     /**
      * Master switch for the whole plugin - mirrors suite-magento's General >
@@ -89,6 +95,18 @@ class Config {
     public function getGenerationTime(): string {
         $time = get_option( self::OPTION_GENERATION_TIME, self::DEFAULT_GENERATION_TIME );
         return $time ? (string) $time : self::DEFAULT_GENERATION_TIME;
+    }
+
+    /**
+     * Whether blog posts are sent in the feed alongside products, tagged
+     * content_type=post - see FeedGenerator. Also controls WidgetEmbed's
+     * page scope: while this is off the widget only renders on WooCommerce
+     * pages (the feed only carries products); once it's on, the feed covers
+     * the rest of the site too, so the widget takes over there as well
+     * instead of leaving WordPress's native search in place.
+     */
+    public function includesPosts(): bool {
+        return 'yes' === get_option( self::OPTION_INCLUDE_POSTS, 'no' );
     }
 
     /**
@@ -184,11 +202,39 @@ class Config {
     }
 
     /**
-     * True only when everything the reindex API call needs is actually
-     * configured - mirrors Magento's SoloSearchClient silently skipping the
-     * notification (not erroring) whenever config is incomplete.
+     * True only when everything a SoloSearch API call needs is actually
+     * configured (reindex, or the real-time product sync endpoints) - mirrors
+     * Magento's SoloSearchClient silently skipping the call (not erroring)
+     * whenever config is incomplete.
      */
-    public function canNotifyReindex(): bool {
+    public function canCallApi(): bool {
         return '' !== $this->getApiToken() && '' !== $this->getSearchEngineId();
+    }
+
+    /**
+     * Whether product changes are pushed to SoloSearch in real time as they
+     * happen. Checked alongside isEnabled() (the plugin's master switch,
+     * still required) but independent of isAutoGenerationEnabled(), which
+     * only gates the full feed's cron. When off, ProductQueue\ChangeNotifier
+     * queues nothing new, and ProductQueue\Sync rejects whatever is still
+     * pending instead of sending it. Mirrors suite-magento's Product Queue >
+     * Enable Real-Time Sync, default "yes" so existing installs keep working
+     * as-is until someone explicitly turns it off.
+     */
+    public function isRealtimeSyncEnabled(): bool {
+        return 'yes' === get_option( self::OPTION_REALTIME_SYNC_ENABLE, 'yes' );
+    }
+
+    /**
+     * How many days finished (success/error) product queue entries are kept
+     * before ProductQueue\Cleaner removes them - mirrors suite-magento's
+     * Product Queue > History Retention (days). Pending entries are never
+     * removed regardless of age.
+     */
+    public function getQueueRetentionDays(): int {
+        $days = get_option( self::OPTION_QUEUE_RETENTION_DAYS, self::DEFAULT_QUEUE_RETENTION_DAYS );
+        $days = (int) $days;
+
+        return $days > 0 ? $days : self::DEFAULT_QUEUE_RETENTION_DAYS;
     }
 }

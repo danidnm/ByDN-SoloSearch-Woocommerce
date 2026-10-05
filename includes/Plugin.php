@@ -37,6 +37,21 @@ class Plugin {
         add_action( 'update_option_' . Config::OPTION_GENERATION_TIME, array( '\\Bydn\\SoloSearchWoo\\Cron\\FeedSchedule', 'reschedule' ) );
         add_action( 'add_option_' . Config::OPTION_GENERATION_TIME, array( '\\Bydn\\SoloSearchWoo\\Cron\\FeedSchedule', 'reschedule' ) );
 
+        // Product queue: WP-Cron has no native per-minute schedule, so the
+        // interval itself has to be registered (unconditionally - a cron
+        // request isn't is_admin() either, same reasoning as the hook above).
+        add_filter( 'cron_schedules', array( '\\Bydn\\SoloSearchWoo\\Cron\\ProductQueueSchedule', 'register_interval' ) );
+        add_action( Cron\ProductQueueSchedule::SYNC_HOOK, array( '\\Bydn\\SoloSearchWoo\\Cron\\ProductQueueSchedule', 'run_sync' ) );
+        add_action( Cron\ProductQueueSchedule::CLEAN_HOOK, array( '\\Bydn\\SoloSearchWoo\\Cron\\ProductQueueSchedule', 'run_cleanup' ) );
+
+        // Product queue: detect changes to enqueue for real-time sync. See
+        // ProductQueue\ChangeNotifier's docblock for why a single hook
+        // covers normal saves and bulk/quick edit alike here, unlike
+        // suite-magento which needs a dedicated observer for mass updates.
+        add_action( 'woocommerce_product_object_updated_props', array( '\\Bydn\\SoloSearchWoo\\ProductQueue\\ChangeNotifier', 'product_changed' ), 10, 2 );
+        add_action( 'woocommerce_trash_product', array( '\\Bydn\\SoloSearchWoo\\ProductQueue\\ChangeNotifier', 'product_deleted' ) );
+        add_action( 'woocommerce_delete_product', array( '\\Bydn\\SoloSearchWoo\\ProductQueue\\ChangeNotifier', 'product_deleted' ) );
+
         if ( is_admin() ) {
             add_filter( 'woocommerce_get_settings_pages', array( $this, 'register_settings_page' ) );
 
@@ -48,6 +63,7 @@ class Plugin {
 
         if ( defined( 'WP_CLI' ) && WP_CLI ) {
             \WP_CLI::add_command( 'solosearch feed', Cli\FeedCommand::class );
+            \WP_CLI::add_command( 'solosearch queue', Cli\ProductQueueSyncCommand::class );
         }
     }
 
@@ -75,6 +91,16 @@ class Plugin {
     public static function activate() {
         add_option( Config::OPTION_GENERATION_TIME, Config::DEFAULT_GENERATION_TIME );
         Cron\FeedSchedule::schedule();
+
+        ProductQueue\Schema::install();
+
+        // Activation runs before run()'s plugins_loaded-gated add_filter() below ever fires
+        // (the plugin was inactive a moment ago, so its main file wasn't loaded during this
+        // request's normal plugins_loaded pass) - without registering the interval here too,
+        // wp_schedule_event() below would silently no-op on an unrecognised schedule name and
+        // the per-minute sync would never actually get scheduled.
+        add_filter( 'cron_schedules', array( '\\Bydn\\SoloSearchWoo\\Cron\\ProductQueueSchedule', 'register_interval' ) );
+        Cron\ProductQueueSchedule::schedule();
     }
 
     /**
@@ -83,6 +109,7 @@ class Plugin {
      */
     public static function deactivate() {
         Cron\FeedSchedule::unschedule();
+        Cron\ProductQueueSchedule::unschedule();
     }
 
     /**
